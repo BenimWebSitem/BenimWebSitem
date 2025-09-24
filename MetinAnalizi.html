@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Metin Analizi</title>
+<style>
+:root{
+	--bg:#0f1226;
+	--panel:#171a35;
+	--panel-2:#1e2246;
+	--text:#e8eaf6;
+	--muted:#a8b0d9;
+	--brand:#6c9cff;
+	--accent:#34d399;
+	--danger:#ff6b6b;
+	--warn:#ffb020;
+	--border:#2b2f63;
+	--shadow:0 10px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+	margin:0;
+	font:14px/1.5 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+	color:var(--text);
+	background:radial-gradient(1200px 800px at 20% -10%, #213, transparent), linear-gradient(180deg, #0b0e20, #0f1226 40%, #0b0e20);
+	overflow:hidden; /* Sayfa kaydırmasını kapat */
+}
+.container{
+	max-width:1200px;
+	height:100vh;          /* Tüm ekran */
+	margin:0 auto;         /* Üst-alt boşluk yok */
+	padding:16px;          /* Tutarlı iç boşluk */
+	display:flex;
+	flex-direction:column;
+	min-height:0;
+}
+.header{
+	display:flex;align-items:center;justify-content:space-between;gap:16px;flex:0 0 auto;
+}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{
+	width:40px;height:40px;border-radius:10px;
+	background:conic-gradient(from 220deg, var(--brand), #9b72ff, #34d399, var(--brand));
+	box-shadow:0 6px 18px rgba(108,156,255,.35), inset 0 0 12px rgba(255,255,255,.18);
+}
+.brand h1{margin:0;font-size:18px;letter-spacing:.3px;font-weight:700;color:#fff}
+.header .actions{display:flex;gap:10px;align-items:center}
+.button{
+	background:var(--brand);color:#fff;border:0;border-radius:10px;padding:10px 14px;
+	cursor:pointer;font-weight:600;letter-spacing:.2px;transition:transform .05s ease, filter .2s ease;
+	box-shadow:0 6px 18px rgba(108,156,255,.35);
+}
+.button:active{transform:translateY(1px)}
+.button.secondary{background:var(--panel-2);color:var(--text);box-shadow:none;border:1px solid var(--border)}
+.button:disabled{opacity:.6;cursor:not-allowed;filter:grayscale(.3)}
+.grid{
+	display:grid;
+	grid-template-columns:1fr;
+	grid-template-rows:1fr; /* Tek kart kalan alanı doldurur */
+	gap:16px;
+	margin-top:16px;
+	flex:1 1 auto;
+	min-height:0;
+}
+.card{
+	background:linear-gradient(180deg, rgba(255,255,255,.02), transparent 40%), var(--panel);
+	border:1px solid var(--border);
+	border-radius:14px;box-shadow:var(--shadow);
+	padding:16px;
+	display:flex;flex-direction:column;min-height:0;
+}
+.card h3{margin:0 0 10px 0;font-size:14px;color:#fff;opacity:.92}
+.input-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+input[type="file"]{
+	background:var(--panel-2);border:1px dashed var(--border);color:var(--muted);
+	padding:10px;border-radius:10px;width:100%;max-width:420px;
+}
+textarea{
+	width:100%;background:#0e1130;border:1px solid var(--border);color:var(--text);
+	border-radius:10px;padding:12px 12px 12px 40px;outline:none;
+	box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
+	flex:1 1 auto;min-height:160px;resize:vertical
+}
+.inline-field{position:relative;min-height:0}
+.inline-field .icon{position:absolute;left:12px;top:12px;opacity:.6;font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 0 0}
+.kpi{background:var(--panel-2);border:1px solid var(--border);border-radius:12px;padding:12px}
+.kpi .v{font-size:18px;font-weight:700}
+.kpi .l{font-size:12px;color:var(--muted)}
+.flex{display:flex;gap:10px;flex-wrap:wrap}
+.badge{
+	display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;
+	background:#0e1130;border:1px solid var(--border);color:var(--muted);font-size:12px
+}
+.separator{height:1px;background:linear-gradient(90deg, transparent, var(--border), transparent);margin:10px 0}
+.progress{height:8px;background:#0e1130;border:1px solid var(--border);border-radius:999px;overflow:hidden}
+.progress > div{height:100%;background:linear-gradient(90deg, var(--brand), #9b72ff);width:0%}
+.footer{margin-top:8px;color:var(--muted);font-size:12px;text-align:center;opacity:.8;flex:0 0 auto}
+</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<div class="brand">
+				<div class="logo" aria-hidden="true"></div>
+				<h1>Metin Analizi</h1>
+			</div>
+			<div class="actions">
+				<button id="btnClear" class="button secondary">Temizle</button>
+				<button id="btnAnalyze" class="button">Analiz Et</button>
+			</div>
+		</div>
+
+		<div class="grid">
+			<div class="card">
+				<h3>Dosyayı Seç</h3>
+				<div class="input-row">
+					<input id="fileInput" type="file" accept=".txt,text/plain" />
+				</div>
+				<div class="separator"></div>
+				<div class="inline-field" style="flex:1 1 auto">
+					<span class="icon">📝</span>
+					<textarea id="rawText" placeholder="Dosya yerine buraya metni de yapıştırabilirsiniz. Dosya seçiliyse dosya içeriği önceliklidir."></textarea>
+				</div>
+				<div style="height:8px"></div>
+				<div class="progress" aria-label="İşlem durumu">
+					<div id="progressBar"></div>
+				</div>
+				<div class="flex" style="margin-top:8px">
+					<span class="badge"><span>ℹ️</span><span id="status">Hazır</span></span>
+					<span class="badge"><span>📄</span><span id="fileMeta">Dosya yok</span></span>
+					<span class="badge"><span>⏱️</span><span id="timeMeta">-</span><span>Analiz Süresi</span></span>
+				</div>
+				<div class="kpis">
+					<div class="kpi"><div class="v" id="kChars">0</div><div class="l">Karakter</div></div>
+					<div class="kpi"><div class="v" id="kWords">0</div><div class="l">Kelime</div></div>
+					<div class="kpi"><div class="v" id="kSents">0</div><div class="l">Cümle</div></div>
+				</div>
+			</div>
+		</div>
+
+		<div class="footer"></div>
+	</div>
+
+<script>
+(function(){
+	"use strict";
+
+	const el = id => document.getElementById(id);
+	const fileInput = el('fileInput');
+	const rawTextEl = el('rawText');
+	const btnAnalyze = el('btnAnalyze');
+	const btnClear = el('btnClear');
+	const statusEl = el('status');
+	const fileMeta = el('fileMeta');
+	const timeMeta = el('timeMeta');
+	const progressBar = el('progressBar');
+	const kChars = el('kChars');
+	const kWords = el('kWords');
+	const kSents = el('kSents');
+	let worker;
+
+	const formatNum = n => (typeof n === 'number' ? n : Number(n||0)).toLocaleString('tr-TR');
+
+	function setStatus(msg){ statusEl.textContent = msg; }
+	function setProgress(p){ progressBar.style.width = Math.max(0, Math.min(100, p|0)) + '%'; }
+
+	function readFileAsText(file){
+		return new Promise((resolve,reject)=>{
+			const fr = new FileReader();
+			fr.onload = () => resolve(fr.result || '');
+			fr.onerror = () => reject(fr.error || new Error('Okuma hatası'));
+			fr.readAsText(file, 'utf-8');
+		});
+	}
+
+	function updateKpis(text){
+		const safe = typeof text === 'string' ? text : '';
+		const words = safe.trim().split(/\\s+/).filter(Boolean);
+		const sentences = safe.split(/(?<=[\\.\\!\\?\\u061F\\u1367\\u1368])\\s+|\\n+/);
+		kChars.textContent = formatNum(safe.length);
+		kWords.textContent = formatNum(words.length);
+		kSents.textContent = formatNum(sentences.filter(s=>s.trim().length>0).length);
+	}
+
+	// Worker yalnızca analiz süresi/hesaplama için (çıktı göstermiyoruz)
+	function createWorker(){
+		const code = `
+			self.onmessage = (e) => {
+				const t0 = Date.now();
+				const { text } = e.data;
+
+				const stopTR = new Set(["ve","veya","ile","da","de","mi","mı","mu","mü","bir","bu","şu","o","ama","fakat","ancak","hem","ki","diye","için","gibi","daha","çok","az","en","ise","ya","yani","her","herhangi","hep","hepsi","bazı","bazen","şey","şöyle","böyle","işte","ne","nasıl","neden","niçin","çünkü","değil","var","yok","olarak","kadar","sonra","önce","artık","hala","yine","zaten","beni","bana","ben","sen","seni","sana","siz","biz","onlar","kendi","kendisi","olan","üzere"]);
+				const stopEN = new Set(["the","a","an","and","or","but","if","then","else","for","in","on","at","by","to","of","with","from","as","is","are","was","were","be","been","being","this","that","these","those","it","its","we","you","they","he","she","them","his","her","our","your","their","not","no","yes","do","does","did","done","have","has","had","so","very","more","most","much","many","any","some","all","each","every","just","only","than","also","can","could","should","would","will","may","might"]);
+				const isStop = (w)=> stopTR.has(w) || stopEN.has(w);
+				const cleaned = (text||'').toLowerCase().replace(/[^\\p{L}\\p{N}\\s]/gu,' ');
+				const tokens = cleaned.split(/\\s+/).filter(Boolean).filter(w=>!isStop(w) && w.length>=2);
+				// Basit işlem: frekans say (sadece süreyi simgelemek için)
+				const map = new Map();
+				for(const w of tokens){ map.set(w, (map.get(w)||0)+1); }
+
+				const t1 = Date.now();
+				self.postMessage({type:'time', payload: t1 - t0});
+				self.postMessage({type:'done'});
+			};
+		`;
+		const blob = new Blob([code], {type:'application/javascript'});
+		return new Worker(URL.createObjectURL(blob));
+	}
+
+	function ensureWorker(){
+		if(worker) return worker;
+		worker = createWorker();
+		worker.onmessage = (e)=>{
+			const {type, payload} = e.data;
+			if(type==='done'){
+				setStatus('Tamamlandı');
+				setProgress(100);
+			}else if(type==='time'){
+				timeMeta.textContent = payload + ' ms';
+			}
+		};
+		return worker;
+	}
+
+	async function analyze(){
+		try{
+			const tStart = performance.now();
+			setStatus('Başlatıldı');
+			setProgress(8);
+			let text = '';
+
+			if(fileInput.files && fileInput.files[0]){
+				const f = fileInput.files[0];
+				fileMeta.textContent = `${f.name} (${formatNum(f.size)} bayt)`;
+				text = await readFileAsText(f);
+			}else{
+				fileMeta.textContent = 'Dosya yok (panodan/yazıdan)';
+				text = rawTextEl.value || '';
+			}
+			updateKpis(text);
+
+			if(!text || text.trim().length===0){
+				setStatus('Metin yok');
+				setProgress(0);
+				return;
+			}
+
+			const w = ensureWorker();
+			w.postMessage({ text });
+			const tNow = performance.now() - tStart;
+			timeMeta.textContent = Math.round(tNow) + ' ms';
+			setProgress(35);
+		}catch{
+			setStatus('Hata');
+			setProgress(0);
+		}
+	}
+
+	btnAnalyze.addEventListener('click', analyze);
+	btnClear.addEventListener('click', ()=>{
+		fileInput.value = '';
+		rawTextEl.value = '';
+		fileMeta.textContent = 'Dosya yok';
+		timeMeta.textContent = '-';
+		setProgress(0);
+		setStatus('Hazır');
+		updateKpis('');
+	});
+
+	fileInput.addEventListener('change', async ()=>{
+		if(fileInput.files && fileInput.files[0]){
+			const f = fileInput.files[0];
+			fileMeta.textContent = `${f.name} (${formatNum(f.size)} bayt)`;
+			try{
+				const txt = await readFileAsText(f);
+				rawTextEl.value = txt.slice(0, 2000);
+				updateKpis(txt);
+			}catch{}
+		}else{
+			fileMeta.textContent = 'Dosya yok';
+		}
+	});
+
+	updateKpis('');
+})();
+</script>
+</body>
+</html>
