@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Angry Birds Tek Sayfa Oyunu</title>
+    <style>
+        body {
+            background-color: #333;
+            color: #eee;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 3em;
+            color: #ff5e5e;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            background-color: #7bd3f7;
+            border: 5px solid #555;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Top Germe Oyunu</h1>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <script>
+        // game.js
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Ayarlar
+        const BIRD_RADIUS = 20;
+        // Fırlatma noktasını canvas'ın tam ortasına taşıdık.
+        const SLINGSHOT_X = canvas.width / 2;
+        const SLINGSHOT_Y = 450;
+        const GRAVITY = 0.2;
+        const FRICTION = 0.99;
+        const LAUNCH_POWER = 0.1;
+
+        // Rastgele sayı oluşturma fonksiyonu
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // Vektör sınıfı - Matematiksel işlemleri kolaylaştırır
+        class Vector {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+            }
+            add(v) {
+                this.x += v.x;
+                this.y += v.y;
+            }
+            subtract(v) {
+                this.x -= v.x;
+                this.y -= v.y;
+            }
+            multiply(scalar) {
+                this.x *= scalar;
+                this.y *= scalar;
+            }
+            magnitude() {
+                return Math.sqrt(this.x * this.x + this.y * this.y);
+            }
+            distance(v) {
+                return Math.sqrt(Math.pow(this.x - v.x, 2) + Math.pow(this.y - v.y, 2));
+            }
+        }
+
+        // Kuş Sınıfı
+        class Bird {
+            constructor(x, y, color) {
+                this.position = new Vector(x, y);
+                this.velocity = new Vector(0, 0);
+                this.radius = BIRD_RADIUS;
+                this.color = color;
+                this.isLaunched = false;
+                this.isDragging = false;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2, false);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.closePath();
+            }
+
+            update() {
+                if (this.isLaunched) {
+                    this.velocity.y += GRAVITY;
+                    this.velocity.multiply(FRICTION);
+                    this.position.add(this.velocity);
+                }
+            }
+
+            checkBounds() {
+                if (this.position.y > canvas.height + 50) {
+                    this.reset();
+                }
+            }
+            
+            reset() {
+                this.position.x = SLINGSHOT_X;
+                this.position.y = SLINGSHOT_Y;
+                this.velocity.x = 0;
+                this.velocity.y = 0;
+                this.isLaunched = false;
+            }
+        }
+
+        // Domuz Sınıfı (Hedef)
+        class Pig {
+            constructor(x, y, radius, color) {
+                this.position = new Vector(x, y);
+                this.radius = radius;
+                this.color = color;
+                this.isAlive = true;
+            }
+            
+            draw() {
+                if (this.isAlive) {
+                    ctx.beginPath();
+                    ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2, false);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                    ctx.closePath();
+                }
+            }
+        }
+
+        // Oyun objeleri
+        let bird = new Bird(SLINGSHOT_X, SLINGSHOT_Y, 'red');
+        let pigs = [];
+        let score = 0;
+        let isDragging = false;
+
+        // Domuzları yerleştirme
+        function setupPigs() {
+            pigs = [];
+            let pigColors = ['green', 'lime', 'darkgreen'];
+            // Domuzları ekranın hem soluna hem sağına rastgele yerleştirdik.
+            for (let i = 0; i < 5; i++) {
+                pigs.push(new Pig(getRandomInt(50, canvas.width - 50), getRandomInt(100, 300), 20, pigColors[i % 3]));
+            }
+        }
+
+        // Çizim fonksiyonu
+        function drawSlingShot() {
+            ctx.fillStyle = 'brown';
+            ctx.fillRect(SLINGSHOT_X - 10, SLINGSHOT_Y, 20, 50);
+            ctx.fillRect(SLINGSHOT_X - 30, SLINGSHOT_Y + 50, 60, 10);
+        }
+
+        function drawScore() {
+            ctx.fillStyle = '#fff';
+            ctx.font = '24px Arial';
+            ctx.fillText(`Puan: ${score}`, 10, 30);
+        }
+
+        // Oyunun ana döngüsü
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawSlingShot();
+            drawScore();
+
+            bird.update();
+            bird.checkBounds();
+            bird.draw();
+
+            pigs.forEach(pig => {
+                pig.draw();
+            });
+
+            // Çarpışma kontrolü
+            if (bird.isLaunched) {
+                pigs.forEach(pig => {
+                    if (pig.isAlive) {
+                        const distance = bird.position.distance(pig.position);
+                        if (distance < bird.radius + pig.radius) {
+                            pig.isAlive = false;
+                            score += 100;
+                            // Kuşu sıfırla
+                            setTimeout(() => { bird.reset(); }, 500);
+                        }
+                    }
+                });
+            }
+
+            // Atış öncesi esneme çizgileri
+            if (isDragging) {
+                ctx.beginPath();
+                ctx.moveTo(SLINGSHOT_X, SLINGSHOT_Y);
+                ctx.lineTo(bird.position.x, bird.position.y);
+                ctx.strokeStyle = '#444';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+            }
+        }
+
+        // Fare olayları
+        canvas.addEventListener('mousedown', (event) => {
+            const mousePos = new Vector(event.offsetX, event.offsetY);
+            if (bird.position.distance(mousePos) < BIRD_RADIUS && !bird.isLaunched) {
+                isDragging = true;
+                bird.isDragging = true;
+            }
+        });
+
+        canvas.addEventListener('mousemove', (event) => {
+            if (isDragging) {
+                bird.position.x = event.offsetX;
+                bird.position.y = event.offsetY;
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                bird.isDragging = false;
+                bird.isLaunched = true;
+
+                // Fırlatma hızını hesapla
+                const launchVector = new Vector(SLINGSHOT_X - bird.position.x, SLINGSHOT_Y - bird.position.y);
+                launchVector.multiply(LAUNCH_POWER);
+                bird.velocity = launchVector;
+            }
+        });
+
+        // Oyunu başlat
+        setupPigs();
+        animate();
+    </script>
+</body>
+</html>
